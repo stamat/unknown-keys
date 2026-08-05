@@ -1,0 +1,9 @@
+#!/bin/bash
+#
+# Nothing to build: the package ships the source it is written in, and the type
+# declarations are hand-written beside it. Kept so script/publish and CI can
+# call it without knowing that.
+
+set -euo pipefail
+
+exit 0

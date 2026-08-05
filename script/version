@@ -1,0 +1,10 @@
+#!/bin/bash
+#
+# Write $1 into package.json. script/publish stages and commits it.
+
+set -euo pipefail
+
+version="${1:-}"
+[ -n "$version" ] || { echo "usage: script/version <version>" >&2; exit 1; }
+
+npm version "$version" --no-git-tag-version --allow-same-version

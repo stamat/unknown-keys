@@ -1,0 +1,48 @@
+{
+  "name": "unknown-keys",
+  "version": "0.0.0",
+  "description": "Report the keys a document carries that its JSON Schema does not describe — the config typo, named, with the keys that were allowed",
+  "license": "MIT",
+  "type": "module",
+  "main": "index.mjs",
+  "types": "index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./index.mjs"
+    }
+  },
+  "files": [
+    "index.mjs",
+    "index.d.ts"
+  ],
+  "author": "Stamat <@stamat> (https://stamat.info)",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/stamat/unknown-keys.git"
+  },
+  "homepage": "https://github.com/stamat/unknown-keys",
+  "bugs": "https://github.com/stamat/unknown-keys/issues",
+  "keywords": [
+    "json-schema",
+    "unknown-key",
+    "unknown-property",
+    "additionalproperties",
+    "config",
+    "typo",
+    "lint",
+    "validation",
+    "diagnostics"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "lint": "eslint ."
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "eslint": "^9.39.3",
+    "neostandard": "^0.13.0"
+  }
+}
