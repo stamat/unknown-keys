@@ -1,4 +1,4 @@
-# unknown-keys
+# unknown-keys [![npm version](https://img.shields.io/npm/v/unknown-keys)](https://www.npmjs.com/package/unknown-keys) [![build status](https://github.com/stamat/unknown-keys/actions/workflows/ci.yml/badge.svg)](https://github.com/stamat/unknown-keys/actions/workflows/ci.yml) [![license](https://img.shields.io/github/license/stamat/unknown-keys.svg)](https://github.com/stamat/unknown-keys/blob/main/LICENSE)
 
 Report the keys a document carries that its JSON Schema does not describe.
 
