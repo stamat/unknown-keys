@@ -31,7 +31,9 @@ On `script/publish`, `script/changelog` cuts this section into a released entry
 in the same commit as the version bump, and the entry becomes the body of the
 GitHub release verbatim.
 
-## [Unreleased] — first release
+## [Unreleased]
+
+## [1.0.0] - 2026-08-05 — first release
 
 A misspelt key in a config file is not an error: nothing reads `inn`, so nothing
 complains, the entry it belonged to does nothing, and the missing output is the
