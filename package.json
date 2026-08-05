@@ -1,6 +1,6 @@
 {
   "name": "unknown-keys",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Report the keys a document carries that its JSON Schema does not describe — the config typo, named, with the keys that were allowed",
   "license": "MIT",
   "type": "module",

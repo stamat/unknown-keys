@@ -31,7 +31,9 @@ On `script/publish`, `script/changelog` cuts this section into a released entry
 in the same commit as the version bump, and the entry becomes the body of the
 GitHub release verbatim.
 
-## [Unreleased] — the map keyed by a name you choose
+## [Unreleased]
+
+## [1.1.0] - 2026-08-06 — the map keyed by a name you choose
 
 A schema describing a map with `additionalProperties: { $ref: … }` — resources,
 fields, environments, anything keyed by a name its author picks — was walked
