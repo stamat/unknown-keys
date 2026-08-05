@@ -31,7 +31,19 @@ On `script/publish`, `script/changelog` cuts this section into a released entry
 in the same commit as the version bump, and the entry becomes the body of the
 GitHub release verbatim.
 
-## [Unreleased]
+## [Unreleased] — the map keyed by a name you choose
+
+A schema describing a map with `additionalProperties: { $ref: … }` — resources,
+fields, environments, anything keyed by a name its author picks — was walked
+past rather than into, so every typo inside one went unreported. septic keeps
+its whole configuration that way and got nothing back.
+
+### Fixed
+
+- **A value described only by an `additionalProperties` schema is now walked.**
+  The key naming it is still never a finding, since the schema let any name
+  through; what it holds is described, so it is checked like anything else.
+  `patternProperties` continues to win where both could apply, as the spec says.
 
 ## [1.0.0] - 2026-08-05 — first release
 

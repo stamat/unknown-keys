@@ -100,7 +100,16 @@ function walk(value, node, root, path, found, seen = new Set()) {
       const patterns = patternSchemas(node, key)
       if (patterns === null || patterns.length) {
         for (const sub of patterns || []) walk(child, sub, root, childPath, found)
-      } else if (closed && !found.some((finding) => finding.path === path && finding.key === key)) {
+        continue
+      }
+      // additionalProperties as a schema is the map keyed by a name its author
+      // chooses — resources, fields, environments. The name is theirs and is
+      // never a finding; what it holds is described, so it is walked.
+      if (node.additionalProperties && typeof node.additionalProperties === 'object') {
+        walk(child, node.additionalProperties, root, childPath, found)
+        continue
+      }
+      if (closed && !found.some((finding) => finding.path === path && finding.key === key)) {
         found.push({ path, key, valid: Object.keys(node.properties || {}) })
       }
     }

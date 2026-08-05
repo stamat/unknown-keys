@@ -150,6 +150,24 @@ test('reports a key once when both the level and its allOf branch close the obje
   assert.deepEqual(findings[0].valid, ['a'])
 })
 
+test('walks into the value under a key described only by an additionalProperties schema', () => {
+  // The map keyed by a name its author chooses — resources, fields, environments.
+  const schema = { type: 'object', additionalProperties: closed }
+  assert.deepEqual(at(unknownKeys({ posts: { in: 'a' }, pages: { inn: 'b' } }, schema)), ['pages:inn'])
+})
+
+test('says nothing about the names in that map, the schema having let any name through', () => {
+  const schema = { type: 'object', properties: { db: {} }, additionalProperties: closed }
+  assert.deepEqual(unknownKeys({ db: 'x', anythingAtAll: { in: 'a' } }, schema), [])
+})
+
+test('judges a pattern-matched key by its pattern schema, which additionalProperties does not override', () => {
+  const other = { type: 'object', additionalProperties: false, properties: { name: {} } }
+  const schema = { type: 'object', patternProperties: { '^x-': closed }, additionalProperties: other }
+  assert.deepEqual(at(unknownKeys({ 'x-a': { name: 'wrong here' } }, schema)), ['x-a:name'])
+  assert.deepEqual(at(unknownKeys({ plain: { in: 'wrong here' } }, schema)), ['plain:in'])
+})
+
 test('walks into the value under a patternProperties-matched key', () => {
   const schema = { type: 'object', patternProperties: { '^x-': closed } }
   assert.deepEqual(at(unknownKeys({ 'x-a': { inn: 'typo' } }, schema)), ['x-a:inn'])
