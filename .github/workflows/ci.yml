@@ -17,15 +17,33 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # Linting is a toolchain concern, not a runtime one — neostandard needs a
+  # newer Node than the package does, and running it in the matrix below would
+  # fail the oldest supported runtime over a dev dependency.
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v6
+        with: { node-version: "24", cache: npm }
+
+      - name: Install dependencies
+        run: script/bootstrap
+
+      - name: Lint
+        run: script/lint
+
   test:
     strategy:
       fail-fast: false
-      # A matrix is worth having wherever the project claims to run: two runtime
-      # versions catch deprecations early, and windows-latest catches the path
-      # bugs that never reproduce on a Mac. Drop what does not apply.
+      # Every runtime the package claims to run on. It touches no filesystem and
+      # no paths, so one OS is the whole story.
       matrix:
         os: [ubuntu-latest]
-        version: ["18", "22", "24"]
+        version: ["18", "20", "22", "24"]
     runs-on: ${{ matrix.os }}
 
     steps:
@@ -37,9 +55,6 @@ jobs:
 
       - name: Install dependencies
         run: script/bootstrap
-
-      - name: Lint
-        run: script/lint
 
       - name: Test
         run: script/test
