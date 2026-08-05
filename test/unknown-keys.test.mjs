@@ -87,6 +87,11 @@ test('treats a key matched by patternProperties as one the schema knows', () => 
   assert.deepEqual(at(unknownKeys({ in: 'a', 'x-thing': 1, nope: 2 }, schema)), [':nope'])
 })
 
+test('lets every key through when a patternProperties pattern will not compile, since that is the schema\'s fault', () => {
+  const schema = { type: 'object', additionalProperties: false, properties: { in: {} }, patternProperties: { '[': {} } }
+  assert.deepEqual(unknownKeys({ in: 'a', anything: 1 }, schema), [])
+})
+
 test('says nothing at a level where a conditional could add the key it would accuse', () => {
   const conditional = { ...closed, if: { properties: { in: {} } }, then: { properties: { extra: {} } } }
   assert.deepEqual(unknownKeys({ extra: 1 }, conditional), [])
