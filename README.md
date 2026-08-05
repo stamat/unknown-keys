@@ -93,6 +93,13 @@ same way — the shape you get when several tools share one config file — has 
 unknown top-level keys pass in silence, while everything nested under a block
 you *do* describe is still checked.
 
+Giving `additionalProperties` a schema instead of `true` splits that ownership
+in two: the map keyed by a name its author picks — resources, fields,
+environments — where **the name is theirs and the shape is yours**. The name is
+never a finding, and the value under it is walked like anything else, so a typo
+inside one of those entries is still reported. Where a `patternProperties`
+pattern also matches the key, the pattern wins, as the spec says.
+
 Silence over a false positive is the rule throughout. It says nothing when:
 
 - two branches of a `oneOf` fit the value equally, so which key set was meant
@@ -107,8 +114,9 @@ Silence over a false positive is the rule throughout. It says nothing when:
 Understood and handled: `$ref` to any local JSON pointer including `~0`/`~1`
 escapes, `definitions` and `$defs`, `oneOf` / `anyOf` / `allOf` — a closed
 level that also carries one keeps its own key set — `patternProperties` with
-the value under a matched key walked, arrays, tuple `items` with
-`additionalItems`, and the 2020-12 `prefixItems` tuple.
+the value under a matched key walked, `additionalProperties` as a schema,
+arrays, tuple `items` with `additionalItems`, and the 2020-12 `prefixItems`
+tuple.
 
 ## What it is not
 
