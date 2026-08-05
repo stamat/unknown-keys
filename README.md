@@ -52,8 +52,7 @@ Unknown key "inn" in styles[0]. Valid: in, out, options
 
 ## Use it
 
-`unknownKeys(value, schema)` returns one finding per stray key, in document
-order:
+`unknownKeys(value, schema)` returns one finding per stray key:
 
 | Field | |
 | --- | --- |
@@ -98,14 +97,18 @@ Silence over a false positive is the rule throughout. It says nothing when:
 
 - two branches of a `oneOf` fit the value equally, so which key set was meant
   cannot be known without validating types;
-- the level carries `if` / `then` / `else`, `dependentSchemas`, `dependencies`
-  or `propertyNames`, any of which can widen the key set in ways this does not
+- the level carries `if` / `then` / `else`, `dependentSchemas` or
+  `dependencies`, any of which can widen the key set in ways this does not
   interpret;
+- the object is closed only by `unevaluatedProperties: false`, which this does
+  not interpret;
 - a `$ref` points at something that is not there, or at itself.
 
 Understood and handled: `$ref` to any local JSON pointer including `~0`/`~1`
-escapes, `definitions` and `$defs`, `oneOf` / `anyOf` / `allOf`,
-`patternProperties`, arrays, and tuple `items` with `additionalItems`.
+escapes, `definitions` and `$defs`, `oneOf` / `anyOf` / `allOf` — a closed
+level that also carries one keeps its own key set — `patternProperties` with
+the value under a matched key walked, arrays, tuple `items` with
+`additionalItems`, and the 2020-12 `prefixItems` tuple.
 
 ## What it is not
 

@@ -118,6 +118,56 @@ test('has nothing to say when there is no schema to say it from', () => {
   assert.deepEqual(unknownKeys({ inn: 'a' }, 'not a schema'), [])
 })
 
+test('reports a key named like an Object.prototype member instead of trusting inheritance', () => {
+  assert.deepEqual(at(unknownKeys({ toString: 'x', constructor: 'y', hasOwnProperty: 1 }, closed)),
+    [':toString', ':constructor', ':hasOwnProperty'])
+})
+
+test('a $ref pointing at an inherited name resolves to nothing, not to Object internals', () => {
+  const schema = { properties: { a: { $ref: '#/constructor' } } }
+  assert.deepEqual(unknownKeys({ a: { inn: 'x' } }, schema), [])
+})
+
+test('judges a 2020-12 prefix item against its prefix schema, not the schema for the rest', () => {
+  const schema = {
+    type: 'array',
+    prefixItems: [{ type: 'object', properties: { name: {} } }],
+    items: closed
+  }
+  assert.deepEqual(unknownKeys([{ name: 'ok' }], schema), [])
+  assert.deepEqual(at(unknownKeys([{ name: 'a' }, { inn: 'b' }], schema)), ['[1]:inn'])
+})
+
+test('still reports at a closed level whose oneOf only refines, rather than describing shapes', () => {
+  const refined = { ...closed, oneOf: [{ required: ['in'] }, { required: ['out'] }] }
+  assert.deepEqual(at(unknownKeys({ inn: 'typo', in: 'a' }, refined)), [':inn'])
+})
+
+test('reports a key once when both the level and its allOf branch close the object', () => {
+  const schema = { type: 'object', additionalProperties: false, properties: { a: {} }, allOf: [closed] }
+  const findings = unknownKeys({ zzz: 1 }, schema)
+  assert.equal(findings.length, 1, 'the same key accused twice reads as two typos')
+  assert.deepEqual(findings[0].valid, ['a'])
+})
+
+test('walks into the value under a patternProperties-matched key', () => {
+  const schema = { type: 'object', patternProperties: { '^x-': closed } }
+  assert.deepEqual(at(unknownKeys({ 'x-a': { inn: 'typo' } }, schema)), ['x-a:inn'])
+})
+
+test('propertyNames narrows the names allowed and cannot add one, so it does not buy silence', () => {
+  const schema = { ...closed, propertyNames: { pattern: '^[a-z]+$' } }
+  assert.deepEqual(at(unknownKeys({ inn: 'a' }, schema)), [':inn'])
+})
+
+test('degrades to silence on a oneOf that cycles back to itself, rather than overflowing the stack', () => {
+  const schema = {
+    definitions: { a: { oneOf: [{ $ref: '#/definitions/a' }, { type: 'object', properties: {} }] } },
+    properties: { x: { $ref: '#/definitions/a' } }
+  }
+  assert.deepEqual(unknownKeys({ x: { k: 1 } }, schema), [])
+})
+
 test('reads a nested path as a reader would write it', () => {
   const schema = {
     type: 'object',

@@ -52,9 +52,11 @@ needs `styles[0]`.
   left alone, which is what keeps a config file shared with another tool quiet.
   Ambiguity is silence throughout: an unresolvable or circular `$ref`, a `oneOf`
   where two branches fit the value equally, or a level carrying
-  `if`/`then`/`else`, `dependentSchemas`, `dependencies` or `propertyNames` all
-  produce no finding rather than a false accusation.
+  `if`/`then`/`else`, `dependentSchemas` or `dependencies` all produce no
+  finding rather than a false accusation.
 
   Understood: local `$ref` to any JSON pointer including `~0`/`~1` escapes,
-  `definitions` and `$defs`, `oneOf`/`anyOf`/`allOf`, `patternProperties`,
-  arrays, and tuple `items` with `additionalItems`.
+  `definitions` and `$defs`, `oneOf`/`anyOf`/`allOf` — a closed level that also
+  carries one keeps its own key set — `patternProperties` with the value under
+  a matched key walked, arrays, tuple `items` with `additionalItems`, and the
+  2020-12 `prefixItems`.

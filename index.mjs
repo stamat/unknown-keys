@@ -4,8 +4,9 @@
 
 // Keywords that can widen an object's key set in ways this module does not
 // interpret. A level carrying one is skipped rather than accused: a false
-// "unknown key" costs the reader more than a missed one.
-const CONDITIONAL = ['if', 'then', 'else', 'dependentSchemas', 'dependencies', 'propertyNames']
+// "unknown key" costs the reader more than a missed one. propertyNames is not
+// listed because it can only narrow the names allowed, never add one.
+const CONDITIONAL = ['if', 'then', 'else', 'dependentSchemas', 'dependencies']
 
 // A local JSON pointer — `#/definitions/entry`, `#/$defs/entry`,
 // `#/properties/a`. `~1` and `~0` are the escapes for `/` and `~` in a pointer
@@ -16,7 +17,7 @@ function pointer(ref, root) {
   let node = root
   for (const raw of ref.slice(2).split('/')) {
     const key = raw.replace(/~1/g, '/').replace(/~0/g, '~')
-    if (!node || typeof node !== 'object' || !(key in node)) return null
+    if (!node || typeof node !== 'object' || !Object.hasOwn(node, key)) return null
     node = node[key]
   }
   return node
@@ -33,53 +34,86 @@ function resolve(node, root, depth = 0) {
 
 function fits(node, value) {
   if (!node) return false
-  if (Array.isArray(value)) return node.type === 'array' || Array.isArray(node.items) || 'items' in node
+  if (Array.isArray(value)) return node.type === 'array' || Array.isArray(node.items) || Array.isArray(node.prefixItems) || 'items' in node
   return node.type === 'object' || !!node.properties || !!node.patternProperties
 }
 
 // The branch of a oneOf/anyOf/allOf describing the shape the value actually
-// has. Exactly one match is the only case that can be read: two objects fitting
-// equally means the document could be either, and there is no key set to judge
-// against without validating types.
-function shapeFor(node, value, root) {
+// has, used only to test whether a branch fits. Exactly one match is the only
+// case that can be read: two objects fitting equally means the document could
+// be either. Bounded like resolve, because a oneOf reached again through its
+// own $ref recurses here forever and each hop is a fresh resolve the depth cap
+// there never sees.
+function shapeFor(node, value, root, depth = 0) {
+  if (depth > 20) return null
   node = resolve(node, root)
   if (!node || typeof node !== 'object') return null
   const branches = node.oneOf || node.anyOf || node.allOf
   if (!branches || !Array.isArray(branches)) return node
-  const matches = branches.map((branch) => shapeFor(branch, value, root)).filter((branch) => fits(branch, value))
+  const matches = branches.map((branch) => shapeFor(branch, value, root, depth + 1)).filter((branch) => fits(branch, value))
   return matches.length === 1 ? matches[0] : null
 }
 
+// prefixItems is the 2020-12 spelling of a tuple; when it is present, items
+// describes the positions after the prefix, not the whole array.
 function itemSchema(node, index) {
+  if (Array.isArray(node.prefixItems)) return index < node.prefixItems.length ? node.prefixItems[index] : node.items
   if (Array.isArray(node.items)) return index < node.items.length ? node.items[index] : node.additionalItems
   return node.items
 }
 
-function known(node, key) {
-  if (node.properties && key in node.properties) return true
-  return Object.keys(node.patternProperties || {}).some((source) => {
+// Every patternProperties schema whose pattern matches the key — the spec
+// applies all of them, so all are walked. Null when a pattern will not compile:
+// an unreadable pattern is the schema's problem, not any key's, so every key at
+// the level is treated as known.
+function patternSchemas(node, key) {
+  const matched = []
+  for (const [source, sub] of Object.entries(node.patternProperties || {})) {
     try {
-      return new RegExp(source).test(key)
+      if (new RegExp(source).test(key)) matched.push(sub)
     } catch {
-      return true // an unreadable pattern is the schema's problem, not this key's
+      return null
     }
-  })
+  }
+  return matched
 }
 
-function walk(value, node, root, path, found) {
+// `seen` holds the schema objects already applied to this exact level, so
+// branches cycling back — A's oneOf naming B, B's naming A — stop instead of
+// recursing forever. Descent into a property or an item starts a fresh set.
+function walk(value, node, root, path, found, seen = new Set()) {
   if (!value || typeof value !== 'object') return
-  node = shapeFor(node, value, root)
-  if (!node) return
+  node = resolve(node, root)
+  if (!node || typeof node !== 'object' || seen.has(node)) return
+  seen.add(node)
 
   if (Array.isArray(value)) {
     value.forEach((item, index) => walk(item, itemSchema(node, index), root, `${path}[${index}]`, found))
-    return
+  } else {
+    const closed = node.additionalProperties === false && !CONDITIONAL.some((keyword) => keyword in node)
+    for (const [key, child] of Object.entries(value)) {
+      const childPath = path ? `${path}.${key}` : key
+      if (node.properties && Object.hasOwn(node.properties, key)) {
+        walk(child, node.properties[key], root, childPath, found)
+        continue
+      }
+      const patterns = patternSchemas(node, key)
+      if (patterns === null || patterns.length) {
+        for (const sub of patterns || []) walk(child, sub, root, childPath, found)
+      } else if (closed && !found.some((finding) => finding.path === path && finding.key === key)) {
+        found.push({ path, key, valid: Object.keys(node.properties || {}) })
+      }
+    }
   }
 
-  const closed = node.additionalProperties === false && !CONDITIONAL.some((keyword) => keyword in node)
-  for (const [key, child] of Object.entries(value)) {
-    if (node.properties && key in node.properties) walk(child, node.properties[key], root, path ? `${path}.${key}` : key, found)
-    else if (closed && !known(node, key)) found.push({ path, key, valid: Object.keys(node.properties || {}) })
+  // additionalProperties sees only the properties beside it, so the level's own
+  // key set above applies no matter what its oneOf/anyOf/allOf decides; the one
+  // branch fitting the value's shape is then applied on top. Both can close the
+  // object and accuse the same key, which is why the push above deduplicates.
+  const branches = node.oneOf || node.anyOf || node.allOf
+  if (Array.isArray(branches)) {
+    const matches = branches.filter((branch) => fits(shapeFor(branch, value, root), value))
+    if (matches.length === 1) walk(value, matches[0], root, path, found, seen)
   }
 }
 
