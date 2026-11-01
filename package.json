@@ -42,7 +42,7 @@
     "node": ">=18"
   },
   "devDependencies": {
-    "eslint": "^9.39.3",
-    "neostandard": "^0.13.0"
+    "eslint": "^10.13.0",
+    "neostandard": "^0.14.1"
   }
 }
